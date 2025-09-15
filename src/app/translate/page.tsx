@@ -140,7 +140,7 @@ export default function TranslatePage() {
                         <div>
                           <span className="text-sm text-black">System:</span>
                           <p className="font-mono text-lg text-black">
-                            {res.source.system}
+                            {res.source.system.toUpperCase()}
                           </p>
                         </div>
                         <div className="col-span-2">
@@ -173,7 +173,7 @@ export default function TranslatePage() {
                               <div>
                                 <span className="text-sm text-black">Target System:</span>
                                 <p className="font-mono text-lg text-black">
-                                  {mapping.targetSystem}
+                                  {mapping.targetSystem.toUpperCase()}
                                 </p>
                               </div>
                               {mapping.targetDisplay && (

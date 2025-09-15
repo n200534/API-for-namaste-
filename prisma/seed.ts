@@ -69,27 +69,27 @@ async function main() {
   const mappings = [
     {
       sourceCode: 'NAMC0123',
-      sourceSystem: 'namaste',
+      sourceSystem: 'NAMASTE',
       targetCode: 'SK01.2',
-      targetSystem: 'icd11',
+      targetSystem: 'ICD-11',
       confidence: 1.0,
       relation: 'equivalent',
       status: 'active'
     },
     {
       sourceCode: 'NAMC0456',
-      sourceSystem: 'namaste',
+      sourceSystem: 'NAMASTE',
       targetCode: 'AB00',
-      targetSystem: 'icd11',
+      targetSystem: 'ICD-11',
       confidence: 0.95,
       relation: 'equivalent',
       status: 'active'
     },
     {
       sourceCode: 'NAMC0789',
-      sourceSystem: 'namaste',
+      sourceSystem: 'NAMASTE',
       targetCode: 'AB01',
-      targetSystem: 'icd11',
+      targetSystem: 'ICD-11',
       confidence: 0.9,
       relation: 'equivalent',
       status: 'active'
@@ -99,14 +99,14 @@ async function main() {
       sourceCode: 'SK01.2',
       sourceSystem: 'icd11',
       targetCode: 'NAMC0123',
-      targetSystem: 'namaste',
+      targetSystem: 'NAMASTE',
       confidence: 1.0,
       relation: 'equivalent',
       status: 'active'
     },
     {
       sourceCode: 'AB00',
-      sourceSystem: 'icd11',
+      sourceSystem: 'ICD-11',
       targetCode: 'NAMC0456',
       targetSystem: 'namaste',
       confidence: 0.95,
