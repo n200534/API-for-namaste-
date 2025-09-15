@@ -1,0 +1,63 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Terminology {
+  id      String @id @default(cuid())
+  code    String @unique
+  system  String
+  display String
+  version String?
+  status  String  @default("active")
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("terminology")
+  @@index([code, system])
+  @@index([system])
+}
+
+model Mapping {
+  id            String  @id @default(cuid())
+  sourceCode    String
+  sourceSystem  String
+  targetCode    String
+  targetSystem  String
+  confidence    Float   @default(1.0)
+  relation      String? // "equivalent", "narrower", "broader", etc.
+  status        String  @default("active")
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("mapping")
+  @@unique([sourceCode, sourceSystem, targetCode, targetSystem])
+  @@index([sourceCode, sourceSystem])
+  @@index([targetCode, targetSystem])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  timestamp DateTime @default(now())
+  userId    String?  // ABHA ID or user identifier
+  action    String   // "translate", "bundle_upload", "search", etc.
+  details   Json     // Request/response details
+  ipAddress String?
+  userAgent String?
+  
+  createdAt DateTime @default(now())
+
+  @@map("audit_logs")
+  @@index([timestamp])
+  @@index([userId])
+  @@index([action])
+}
