@@ -6,7 +6,7 @@ export default function Home() {
       <div className="container mx-auto px-4 py-16">
         <div className="text-center mb-12">
           <h1 className="text-5xl font-bold text-black mb-4">
-            NAMASTE Healthcare API
+          API Integration of NAMASTE & ICD-11 via TM2
           </h1>
           <p className="text-xl text-black mb-8">
             Dual coding system for AYUSH and ICD-11 integration
@@ -32,7 +32,7 @@ export default function Home() {
             <div className="text-blue-600 text-3xl mb-4">🔍</div>
             <h3 className="text-xl font-semibold mb-2">Search & Translate</h3>
             <p className="text-black">
-              Search NAMASTE codes and get corresponding ICD-11 mappings with confidence scores.
+            “Search NAMASTE or ICD-11 codes or terminology to get corresponding mappings with confidence scores.”
             </p>
           </div>
 

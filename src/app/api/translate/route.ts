@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { requireAuth, validateABHAToken } from '@/lib/auth'
+import { validateABHAToken } from '@/lib/auth'
 import { logAudit } from '@/lib/audit'
 
 export async function GET(request: NextRequest) {
@@ -11,79 +11,119 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const code = searchParams.get('code')
+    const codeOrName = searchParams.get('code')
     const system = searchParams.get('system')
 
-    if (!code || !system) {
+    if (!codeOrName || !system) {
       return NextResponse.json(
-        { error: 'Missing required parameters: code and system' },
+        { error: 'Missing required parameters: code (or name) and system' },
         { status: 400 }
       )
     }
 
-    // Search for terminology
-    const terminology = await prisma.terminology.findFirst({
+    const searchValue = codeOrName.toLowerCase()
+
+    const terminologyList = await prisma.terminology.findMany({
       where: {
-        code: code,
-        system: system,
-        status: 'active'
-      }
+        system,
+        status: 'active',
+        OR: [
+          { code: codeOrName },
+          { display: { contains: searchValue } }
+        ]
+      },
+      take: 10
     })
 
-    if (!terminology) {
-      await logAudit(user, 'translate_not_found', {
-        request: { code, system },
-        metadata: { found: false }
-      }, request)
-      
+    if (terminologyList.length === 0) {
+      await logAudit(
+        user,
+        'translate_not_found',
+        {
+          request: { code: codeOrName, system },
+          metadata: { found: false }
+        },
+        request
+      )
+
       return NextResponse.json(
         { error: 'Terminology not found' },
         { status: 404 }
       )
     }
 
-    // Find mappings
-    const mappings = await prisma.mapping.findMany({
-      where: {
-        sourceCode: code,
-        sourceSystem: system,
-        status: 'active'
+    const results = await Promise.all(
+      terminologyList.map(async (term) => {
+        const mappings = await prisma.mapping.findMany({
+          where: {
+            sourceCode: term.code,
+            sourceSystem: system,
+            status: 'active'
+          },
+          orderBy: { confidence: 'desc' }
+        })
+
+        // look up display names for target codes
+        const enrichedMappings = await Promise.all(
+          mappings.map(async (m) => {
+            const targetTerm = await prisma.terminology.findFirst({
+              where: {
+                code: m.targetCode,
+                system: m.targetSystem,
+                status: 'active'
+              }
+            })
+            return {
+              targetCode: m.targetCode,
+              targetSystem: m.targetSystem,
+              confidence: m.confidence,
+              relation: m.relation,
+              targetDisplay: targetTerm?.display || null
+            }
+          })
+        )
+
+        return {
+          source: {
+            code: term.code,
+            system: term.system,
+            display: term.display
+          },
+          mappings: enrichedMappings
+        }
+      })
+    )
+
+    await logAudit(
+      user,
+      'translate_success',
+      {
+        request: { code: codeOrName, system },
+        response: { resultCount: results.length },
+        metadata: {
+          totalMappings: results.reduce((sum, r) => sum + r.mappings.length, 0)
+        }
       },
-      orderBy: {
-        confidence: 'desc'
-      }
-    })
+      request
+    )
 
-    const result = {
-      source: {
-        code: terminology.code,
-        system: terminology.system,
-        display: terminology.display
-      },
-      mappings: mappings.map(mapping => ({
-        targetCode: mapping.targetCode,
-        targetSystem: mapping.targetSystem,
-        confidence: mapping.confidence,
-        relation: mapping.relation
-      }))
-    }
-
-    await logAudit(user, 'translate_success', {
-      request: { code, system },
-      response: result,
-      metadata: { mappingCount: mappings.length }
-    }, request)
-
-    return NextResponse.json(result)
-
+    return NextResponse.json(results)
   } catch (error) {
     console.error('Translate API error:', error)
-    
+
     const user = validateABHAToken(request)
-    await logAudit(user, 'translate_error', {
-      request: { code: request.nextUrl.searchParams.get('code'), system: request.nextUrl.searchParams.get('system') },
-      error: error instanceof Error ? error.message : 'Unknown error'
-    }, request)
+    await logAudit(
+      user,
+      'translate_error',
+      {
+        request: {
+          code: request.nextUrl.searchParams.get('code'),
+          system: request.nextUrl.searchParams.get('system')
+        },
+        error: error instanceof Error ? error.message : 'Unknown error'
+      },
+      request
+    )
 
     return NextResponse.json(
       { error: 'Internal server error' },

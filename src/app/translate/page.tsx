@@ -14,19 +14,20 @@ interface TranslationResult {
     targetSystem: string
     confidence: number
     relation?: string
+    targetDisplay?: string | null
   }>
 }
 
 export default function TranslatePage() {
   const [code, setCode] = useState('')
   const [system, setSystem] = useState('namaste')
-  const [result, setResult] = useState<TranslationResult | null>(null)
+  const [result, setResult] = useState<TranslationResult[] | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   const handleTranslate = async () => {
     if (!code.trim()) {
-      setError('Please enter a code')
+      setError('Please enter a code or name')
       return
     }
 
@@ -35,11 +36,14 @@ export default function TranslatePage() {
     setResult(null)
 
     try {
-      const response = await fetch(`/api/translate?code=${encodeURIComponent(code)}&system=${encodeURIComponent(system)}`, {
-        headers: {
-          'Authorization': 'Bearer mock-valid-token'
+      const response = await fetch(
+        `/api/translate?code=${encodeURIComponent(code)}&system=${encodeURIComponent(system)}`,
+        {
+          headers: {
+            Authorization: 'Bearer mock-valid-token',
+          },
         }
-      })
+      )
 
       if (!response.ok) {
         const errorData = await response.json()
@@ -72,13 +76,13 @@ export default function TranslatePage() {
             <div className="grid md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-black mb-2">
-                  Code
+                  Code or Name
                 </label>
                 <input
                   type="text"
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
-                  placeholder="e.g., NAMC0123"
+                  placeholder="e.g., NAMC0123 or kasa"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                 />
               </div>
@@ -115,80 +119,112 @@ export default function TranslatePage() {
           </div>
 
           {result && (
-            <div className="bg-white rounded-lg shadow-lg p-8">
-              <h2 className="text-2xl font-semibold mb-6 text-black">Translation Result</h2>
-              
-              <div className="mb-6">
-                <h3 className="text-lg font-medium text-black mb-2">Source</h3>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <span className="text-sm text-black">Code:</span>
-                      <p className="font-mono text-lg text-black">{result.source.code}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm text-black">System:</span>
-                      <p className="font-mono text-lg text-black">{result.source.system}</p>
-                    </div>
-                    <div className="col-span-2">
-                      <span className="text-sm text-black">Display:</span>
-                      <p className="text-lg text-black">{result.source.display}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            <div className="bg-white rounded-lg shadow-lg p-8 space-y-10">
+              <h2 className="text-2xl font-semibold mb-6 text-black">
+                Translation Result
+              </h2>
 
-              {result.mappings.length > 0 ? (
-                <div>
-                  <h3 className="text-lg font-medium text-black mb-4">Mappings</h3>
-                  <div className="space-y-4">
-                    {result.mappings.map((mapping, index) => (
-                      <div key={index} className="border border-gray-200 rounded-lg p-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <span className="text-sm text-black">Target Code:</span>
-                            <p className="font-mono text-lg text-black">{mapping.targetCode}</p>
-                          </div>
-                          <div>
-                            <span className="text-sm text-black">Target System:</span>
-                            <p className="font-mono text-lg text-black">{mapping.targetSystem}</p>
-                          </div>
-                          <div>
-                            <span className="text-sm text-black">Confidence:</span>
-                            <p className="text-lg">
-                              <span className={`px-2 py-1 rounded text-sm ${
-                                mapping.confidence >= 0.8 ? 'bg-green-100 text-black' :
-                                mapping.confidence >= 0.6 ? 'bg-yellow-100 text-black' :
-                                'bg-red-100 text-black'
-                              }`}>
-                                {(mapping.confidence * 100).toFixed(1)}%
-                              </span>
-                            </p>
-                          </div>
-                          {mapping.relation && (
-                            <div>
-                              <span className="text-sm text-black">Relation:</span>
-                              <p className="text-lg text-black">{mapping.relation}</p>
-                            </div>
-                          )}
+              {result.map((res, i) => (
+                <div key={i} className="space-y-6 border-b pb-8 last:border-b-0">
+                  {/* Source */}
+                  <div>
+                    <h3 className="text-lg font-medium text-black mb-2">Source</h3>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <span className="text-sm text-black">Code:</span>
+                          <p className="font-mono text-lg text-black">
+                            {res.source.code}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-sm text-black">System:</span>
+                          <p className="font-mono text-lg text-black">
+                            {res.source.system}
+                          </p>
+                        </div>
+                        <div className="col-span-2">
+                          <span className="text-sm text-black">Display:</span>
+                          <p className="text-lg text-black">{res.source.display}</p>
                         </div>
                       </div>
-                    ))}
+                    </div>
                   </div>
+
+                  {/* Mappings */}
+                  {res.mappings.length > 0 ? (
+                    <div>
+                      <h3 className="text-lg font-medium text-black mb-4">
+                        Mappings
+                      </h3>
+                      <div className="space-y-4">
+                        {res.mappings.map((mapping, index) => (
+                          <div
+                            key={index}
+                            className="border border-gray-200 rounded-lg p-4"
+                          >
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <span className="text-sm text-black">Target Code:</span>
+                                <p className="font-mono text-lg text-black">
+                                  {mapping.targetCode}
+                                </p>
+                              </div>
+                              <div>
+                                <span className="text-sm text-black">Target System:</span>
+                                <p className="font-mono text-lg text-black">
+                                  {mapping.targetSystem}
+                                </p>
+                              </div>
+                              {mapping.targetDisplay && (
+                                <div className="col-span-2">
+                                  <span className="text-sm text-black">Target Display:</span>
+                                  <p className="text-lg text-black">
+                                    {mapping.targetDisplay}
+                                  </p>
+                                </div>
+                              )}
+                              <div>
+                                <span className="text-sm text-black">Confidence:</span>
+                                <p className="text-lg">
+                                  <span
+                                    className={`px-2 py-1 rounded text-sm ${
+                                      mapping.confidence >= 0.8
+                                        ? 'bg-green-100 text-black'
+                                        : mapping.confidence >= 0.6
+                                        ? 'bg-yellow-100 text-black'
+                                        : 'bg-red-100 text-black'
+                                    }`}
+                                  >
+                                    {(mapping.confidence * 100).toFixed(1)}%
+                                  </span>
+                                </p>
+                              </div>
+                              {mapping.relation && (
+                                <div>
+                                  <span className="text-sm text-black">Relation:</span>
+                                  <p className="text-lg text-black">
+                                    {mapping.relation}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-black">
+                      No mappings found for this code
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="text-center py-8 text-black">
-                  No mappings found for this code
-                </div>
-              )}
+              ))}
             </div>
           )}
 
           <div className="mt-8 text-center">
-            <Link
-              href="/"
-              className="text-black font-medium hover:underline"
-            >
+            <Link href="/" className="text-black font-medium hover:underline">
               ← Back to Home
             </Link>
           </div>
